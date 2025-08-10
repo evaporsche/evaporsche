@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  // Basic CORS headers (just in case)
+  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -12,7 +12,6 @@ export default async function handler(req, res) {
   try {
     const body = typeof req.body === 'object' ? req.body : JSON.parse(req.body || '{}');
 
-    // Default model — DeepSeek via OpenRouter (free)
     const model = body.model || 'deepseek/deepseek-chat:free';
 
     const payload = {
@@ -25,20 +24,15 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://vercel.app',
-        'X-Title': 'DeepSeek Proxy via Vercel'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
     });
 
-    // Forward the response as-is
-    res.status(r.status);
-    res.setHeader('Content-Type', r.headers.get('content-type') || 'application/json');
-    const buf = await r.arrayBuffer();
-    return res.end(Buffer.from(buf));
+    const data = await r.text();
+    res.status(r.status).send(data);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Proxy error', details: String(err) });
+    res.status(500).json({ error: 'Proxy error', details: String(err) });
   }
 }
